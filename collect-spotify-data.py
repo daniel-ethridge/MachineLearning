@@ -102,16 +102,16 @@ if __name__ == "__main__":
     df = pd.DataFrame(columns=["spotify_id", "lastfm_id", "acousticness", "danceability", "energy", "instrumentalness",
                                "loudness", "speechiness", "valence", "tempo", "mode", "manual_check"])
 
-    num_iterations = 0
     total = len(lastfm_df)
-    start_at = 730
+    start_at = 0
+
+    generate_access_token_from_spotify("client-id.txt", "client-secret.txt", "access_token.txt")
 
     for index, row in lastfm_df.iterrows():
-        num_iterations += 1
-        if num_iterations < start_at:
+        if index < start_at:
             continue
-        if num_iterations % 10 == 0:
-            print(f"File {num_iterations}")
+        if index % 10 == 0:
+            print(f"File {index + 1}")
 
         new_data = {
             "spotify_id": -1.0, "lastfm_id": -1.0, "acousticness": -1.0, "danceability": -1.0, "energy": -1.0,
@@ -194,19 +194,19 @@ if __name__ == "__main__":
 
         df.loc[len(df)] = new_data.values()
 
-        if num_iterations % 1000 == 0:
-            print(f"progress saved: {round(100 * num_iterations / total, 2)}%")
-            df_dict[num_iterations] = df
+        if index % 1000 == 0:
+            print(f"progress saved: {round(100 * index / total, 2)}%")
+            df_dict[index] = df
             df = df.drop(labels=df.index, axis=0)
 
-        if num_iterations > 5000:
+        if index > 5000:
             break
 
-    with open("data/track-iterations.txt", "w") as f:
-        f.write(str(num_iterations))
+    with open("data/last-index-written.txt", "w") as f:
+        f.write(str(index))
 
-    num_iterations += 1
-    df_dict[num_iterations] = df
+    index += 1
+    df_dict[index] = df
     test = df_dict.values()
     write_df = pd.concat(df_dict.values())
     write_df.to_csv("spotify.csv")
