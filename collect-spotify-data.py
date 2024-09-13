@@ -303,6 +303,7 @@ if __name__ == "__main__":
 
         spotify_ids_for_call = []
         lastfm_ids_for_linking = []
+        manual_check_list = []
 
         if index > progress_report:
             progress_report += progress_report_interval
