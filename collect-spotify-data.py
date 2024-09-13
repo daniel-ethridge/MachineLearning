@@ -111,8 +111,15 @@ if __name__ == "__main__":
 
         return total_string
 
+    def initialize_new_data():
+        return {
+            "spotify_id": -1.0, "lastfm_id": -1.0, "acousticness": -1.0, "danceability": -1.0, "energy": -1.0,
+            "instrumentalness": -1.0, "loudness": -1, "speechiness": -1.0, "valence": -1.0, "tempo": -1.0,
+            "mode": -1.0, "manual_check": False
+        }
 
-    spotify_sleep = 0.06  # DO NOT LOWER
+
+    spotify_sleep = 0.07  # DO NOT LOWER
 
     lastfm_df = pd.read_csv("./data/lastfm.csv")
 
@@ -149,17 +156,14 @@ if __name__ == "__main__":
 
     spotify_ids_for_call = []
     lastfm_ids_for_linking = []
+    manual_check_list = []
     for index, row in lastfm_df.iterrows():
         if index <= start_at:
             continue
         if index % 10 == 0:
             print(f"File {index + 1}")
 
-        new_data = {
-            "spotify_id": -1.0, "lastfm_id": -1.0, "acousticness": -1.0, "danceability": -1.0, "energy": -1.0,
-            "instrumentalness": -1.0, "loudness": -1, "speechiness": -1.0, "valence": -1.0, "tempo": -1.0,
-            "mode": -1.0, "manual_check": False
-        }
+        new_data = initialize_new_data()
 
         artist = lastfm_df.loc[index]["artist"]
         track = lastfm_df.loc[index]["title"]
@@ -221,19 +225,22 @@ if __name__ == "__main__":
                     response_item_selection = item
                     spot_artist = item["artists"][0]["name"]
                     spot_track = item["name"]
-                    new_data["spotify_id"] = item["id"]
                     break
 
             spotify_ids_for_call.append(response_item_selection["id"])
             lastfm_ids_for_linking.append(lastfm_id)
 
             if spot_artist.lower() != artist.lower() or spot_track.lower() != track.lower():
-                new_data["manual_check"] = True
+                manual_check_list.append(True)
+            else:
+                manual_check_list.append(False)
 
         except IndexError:
             continue
 
         assert len(spotify_ids_for_call) == len(lastfm_ids_for_linking), "Somehow these two lists are different sizes."
+        assert len(spotify_ids_for_call) == len(manual_check_list), "Somehow these two lists are different sizes."
+
         if len(spotify_ids_for_call) != 100:
             continue
 
@@ -280,13 +287,19 @@ if __name__ == "__main__":
 
         lastfm_id_idx = 0
         for feature_dict in features["audio_features"]:
+            new_data["lastfm_id"] = lastfm_ids_for_linking[lastfm_id_idx]
+            new_data["spotify_id"] = spotify_ids_for_call[lastfm_id_idx]
+            new_data["manual_check"] = manual_check_list[lastfm_id_idx]
+            lastfm_id_idx += 1
+            if feature_dict is None:
+                new_data = initialize_new_data()
+                continue
             for key in feature_dict.keys():
                 if key in new_data.keys():
                     new_data[key] = feature_dict[key]
 
-            new_data["lastfm_id"] = lastfm_ids_for_linking[lastfm_id_idx]
             df.loc[len(df)] = new_data.values()
-            lastfm_id_idx += 1
+            new_data = initialize_new_data()
 
         spotify_ids_for_call = []
         lastfm_ids_for_linking = []
