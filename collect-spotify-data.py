@@ -1,3 +1,4 @@
+import os
 from turtledemo.forest import start
 
 import requests
@@ -23,7 +24,7 @@ def get_spotify_track_id(track_name, artist_name, access_token):
         'q': query_string,
         'type': 'track',
         'access_token': access_token,
-        'limit': 1
+        'limit': 50
     }
 
     return requests.get(base_url, params=params)
@@ -77,15 +78,20 @@ def generate_access_token_from_spotify(client_id_file, client_secret_file, acces
         f.write(access_token)
 
 
-def get_spotify_track_audio_features(access_token, spotify_track_id):
+def get_spotify_tracks_audio_features(access_token, spotify_track_ids):
     """
     :param access_token: Spotify access token
     :param spotify_track_id: ID of spotify track to read
     :return:
     """
-    audio_feature_endpoint = f"https://api.spotify.com/v1/audio-features/{spotify_track_id}"
 
-    return requests.get(audio_feature_endpoint, headers={"Authorization": f"Bearer {access_token}"})
+    parameters = {
+        "ids": spotify_track_ids
+    }
+
+    audio_feature_endpoint = f"https://api.spotify.com/v1/audio-features"
+    print("Audio Feature batch requested.")
+    return requests.get(audio_feature_endpoint, params=parameters, headers={"Authorization": f"Bearer {access_token}"})
 
 
 if __name__ == "__main__":
@@ -94,10 +100,23 @@ if __name__ == "__main__":
     spotify_id, last_fm_id, acousticness, danceability, energy, instrumentalness, loudness, speechiness, valence, 
     tempo, mode, manual_check
     '''
-    spotify_sleep = 0.1
+
+    def id_list_to_string(list_of_ids):
+        total_string = ""
+
+        for id_ in list_of_ids:
+            total_string += id_
+            if id_ != list_of_ids[-1]:
+                total_string += ","
+
+        return total_string
+
+
+    spotify_sleep = 0.06  # DO NOT LOWER
 
     lastfm_df = pd.read_csv("./data/lastfm.csv")
 
+    # df_dict = {"start": pd.read_csv("./data/spotify.csv").drop(columns=["Unnamed: 0"])}
     df_dict = {}
     df = pd.DataFrame(columns=["spotify_id", "lastfm_id", "acousticness", "danceability", "energy", "instrumentalness",
                                "loudness", "speechiness", "valence", "tempo", "mode", "manual_check"])
@@ -105,10 +124,33 @@ if __name__ == "__main__":
     total = len(lastfm_df)
     start_at = 0
 
-    generate_access_token_from_spotify("client-id.txt", "client-secret.txt", "access_token.txt")
+    client_iteration = 0
+    # generate_access_token_from_spotify(id_list[client_iteration], secret_list[client_iteration],
+    #                                    "./client-info/access_token.txt")
 
+    client_path = "./client-info"
+    file_list = os.listdir("client-info")
+    id_list = []
+    secret_list = []
+    for file in file_list:
+        if "id" in file:
+            id_list.append(os.path.join(client_path, file))
+        elif "secret" in file:
+            secret_list.append(os.path.join(client_path, file))
+
+    id_list.sort()
+    secret_list.sort()
+
+    progress_report_interval = 1000
+    progress_save_interval = 10000
+
+    progress_report = progress_report_interval
+    progress_save = progress_save_interval
+
+    spotify_ids_for_call = []
+    lastfm_ids_for_linking = []
     for index, row in lastfm_df.iterrows():
-        if index < start_at:
+        if index <= start_at:
             continue
         if index % 10 == 0:
             print(f"File {index + 1}")
@@ -121,15 +163,17 @@ if __name__ == "__main__":
 
         artist = lastfm_df.loc[index]["artist"]
         track = lastfm_df.loc[index]["title"]
+        lastfm_id = lastfm_df.loc[index]["lastfm_id"]
 
-        token = read_access_token_from_file("access_token.txt")
+        token = read_access_token_from_file("./client-info/access_token.txt")
         time.sleep(spotify_sleep)
         api_response = get_spotify_track_id(track, artist, token)
 
         if api_response.status_code == 401:
             time.sleep(spotify_sleep)
-            generate_access_token_from_spotify("client-id.txt", "client-secret.txt", "access_token.txt")
-            token = read_access_token_from_file("access_token.txt")
+            generate_access_token_from_spotify(id_list[client_iteration], secret_list[client_iteration],
+                                               "./client-info/access_token.txt")
+            token = read_access_token_from_file("./client-info/access_token.txt")
             time.sleep(spotify_sleep)
             api_response = get_spotify_track_id(track, artist, token)
 
@@ -141,72 +185,130 @@ if __name__ == "__main__":
         elif api_response.status_code == 429:
             print(api_response.json())
             print(api_response.headers)
-            break
+            time.sleep(spotify_sleep)
+            client_iteration += 1
+            if client_iteration > 2:
+                break
 
+            generate_access_token_from_spotify(id_list[client_iteration], secret_list[client_iteration],
+                                               "./client-info/access_token.txt")
+            token = read_access_token_from_file("./client-info/access_token.txt")
+            time.sleep(spotify_sleep)
+            api_response = get_spotify_track_id(track, artist, token)
+            if api_response.status_code == 429:
+                print(api_response.json())
+                print(api_response.headers)
+                break
 
-        elif api_response.status_code != 200:
+        if api_response.status_code != 200:
             print(api_response.json())
             print(api_response.url)
             break
 
         try:
-            response_items = api_response.json()["tracks"]["items"][0]
-            spot_artist = response_items["artists"][0]["name"]
-            spot_track = response_items["name"]
+            response_items = api_response.json()["tracks"]["items"]
 
-            new_data["spotify_id"] = response_items["id"]
+            spot_artist = response_items[0]["artists"][0]["name"]
+            spot_track = response_items[0]["name"]
+            new_data["spotify_id"] = response_items[0]["id"]
 
-            if spot_artist.lower() != artist.lower() and spot_track.lower() != track.lower():
+            response_item_selection = response_items[0]
+
+            for item in response_items:
+                if item["artists"][0]["name"].lower() != artist.lower() or item["name"].lower() != track.lower():
+                    continue
+                else:
+                    response_item_selection = item
+                    spot_artist = item["artists"][0]["name"]
+                    spot_track = item["name"]
+                    new_data["spotify_id"] = item["id"]
+                    break
+
+            spotify_ids_for_call.append(response_item_selection["id"])
+            lastfm_ids_for_linking.append(lastfm_id)
+
+            if spot_artist.lower() != artist.lower() or spot_track.lower() != track.lower():
                 new_data["manual_check"] = True
 
         except IndexError:
             continue
 
+        assert len(spotify_ids_for_call) == len(lastfm_ids_for_linking), "Somehow these two lists are different sizes."
+        if len(spotify_ids_for_call) != 100:
+            continue
+
+        spotify_id_string = id_list_to_string(spotify_ids_for_call)
+
         time.sleep(spotify_sleep)
-        api_response = get_spotify_track_audio_features(token, new_data["spotify_id"])
+        api_response = get_spotify_tracks_audio_features(token, spotify_id_string)
 
         # first check
         if api_response.status_code == 401:
             time.sleep(spotify_sleep)
-            generate_access_token_from_spotify("client-id.txt", "client-secret.txt", "access_token.txt")
-            token = read_access_token_from_file("access_token.txt")
+            generate_access_token_from_spotify(id_list[client_iteration], secret_list[client_iteration],
+                                               "./client-info/access_token.txt")
+            token = read_access_token_from_file("./client-info/access_token.txt")
             time.sleep(spotify_sleep)
-            api_response = get_spotify_track_audio_features(token, new_data["spotify_id"])
+            api_response = get_spotify_tracks_audio_features(token, spotify_id_string)
 
         elif api_response.status_code == 429:
             print(api_response.json())
             print(api_response.headers)
-            print(api_response.url)
-            break
+            time.sleep(spotify_sleep)
+            client_iteration += 1
+            if client_iteration > 2:
+                break
+
+            generate_access_token_from_spotify(id_list[client_iteration], secret_list[client_iteration],
+                                               "./client-info/access_token.txt")
+            token = read_access_token_from_file("./client-info/access_token.txt")
+            time.sleep(spotify_sleep)
+            api_response = get_spotify_tracks_audio_features(token, spotify_id_string)
+            if api_response.status_code == 429:
+                print(api_response.json())
+                print(api_response.headers)
+                break
 
         # Second check
         if api_response.status_code != 200:
             print(f"Spotify ID: {new_data["spotify_id"]} // {spot_track} by {spot_artist}: {api_response.json()}")
+            print(api_response.url)
             df.loc[len(df)] = new_data.values()
             continue
 
         features = api_response.json()
 
-        for key in features.keys():
-            if key in new_data.keys():
-                new_data[key] = features[key]
-        new_data["lastfm_id"] = lastfm_df.loc[index]["lastfm_id"]
+        lastfm_id_idx = 0
+        for feature_dict in features["audio_features"]:
+            for key in feature_dict.keys():
+                if key in new_data.keys():
+                    new_data[key] = feature_dict[key]
 
-        df.loc[len(df)] = new_data.values()
+            new_data["lastfm_id"] = lastfm_ids_for_linking[lastfm_id_idx]
+            df.loc[len(df)] = new_data.values()
+            lastfm_id_idx += 1
 
-        if index % 1000 == 0:
-            print(f"progress saved: {round(100 * index / total, 2)}%")
+        spotify_ids_for_call = []
+        lastfm_ids_for_linking = []
+
+        if index > progress_report:
+            progress_report += progress_report_interval
+            print(f"Progress: {round(100 * index / total, 2)}%")
             df_dict[index] = df
             df = df.drop(labels=df.index, axis=0)
 
-        if index > 5000:
-            break
+        if index > progress_save:
+            progress_save += progress_save_interval
+            print(f"Progress saved: {round(100 * index / total, 2)}%")
+            df_dict[index] = df
+            write_df = pd.concat(df_dict.values())
+            write_df.to_csv("./data/spotify.csv")
+
 
     with open("data/last-index-written.txt", "w") as f:
         f.write(str(index))
 
     index += 1
     df_dict[index] = df
-    test = df_dict.values()
     write_df = pd.concat(df_dict.values())
-    write_df.to_csv("spotify.csv")
+    write_df.to_csv("./data/spotify.csv")
