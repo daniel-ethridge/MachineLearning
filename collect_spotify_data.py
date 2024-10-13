@@ -125,13 +125,15 @@ if __name__ == "__main__":
 
     lastfm_df = pd.read_csv("./data/lastfm.csv")
 
-    # df_dict = {"start": pd.read_csv("./data/spotify.csv").drop(columns=["Unnamed: 0"])}
-    df_dict = {}
+    df_dict = {"start": pd.read_csv("./data/spotify.csv").drop(columns=["Unnamed: 0"])}
+    # df_dict = {}
     df = pd.DataFrame(columns=["spotify_id", "lastfm_id", "acousticness", "danceability", "energy", "instrumentalness",
                                "loudness", "speechiness", "valence", "tempo", "mode", "manual_check"])
 
     total = len(lastfm_df)
-    start_at = 0
+
+    with open("./data/last-index-written.txt", "r") as f:
+        start_at = int(f.readline())
 
     client_iteration = 0
     # generate_access_token_from_spotify(id_list[client_iteration], secret_list[client_iteration],
@@ -150,15 +152,14 @@ if __name__ == "__main__":
     id_list.sort()
     secret_list.sort()
 
-    progress_report_interval = 1000
-    progress_save_interval = 10000
-
-    progress_report = progress_report_interval
-    progress_save = progress_save_interval
+    progress_report_interval = 500
+    progress_report = progress_report_interval + start_at
 
     spotify_ids_for_call = []
     lastfm_ids_for_linking = []
     manual_check_list = []
+    last_index_written = start_at
+    print(f"Starting with client credentials set {client_iteration}.")
     for index, row in lastfm_df.iterrows():
         if index <= start_at:
             continue
@@ -189,12 +190,14 @@ if __name__ == "__main__":
             continue
 
         elif api_response.status_code == 429:
-            print(api_response.json())
             print(api_response.headers)
+            print("429: Called from spotify id request attempt 1.")
             time.sleep(spotify_sleep)
             client_iteration += 1
             if client_iteration > 2:
                 break
+
+            print(f"Moving to client credentials set {client_iteration}.")
 
             generate_access_token_from_spotify(id_list[client_iteration], secret_list[client_iteration],
                                                "./client-info/access_token.txt")
@@ -202,8 +205,8 @@ if __name__ == "__main__":
             time.sleep(spotify_sleep)
             api_response = get_spotify_track_id(track, artist, token)
             if api_response.status_code == 429:
-                print(api_response.json())
                 print(api_response.headers)
+                print("429: Called from spotify id request attempt 2. Should break.")
                 break
 
         if api_response.status_code != 200:
@@ -261,12 +264,14 @@ if __name__ == "__main__":
             api_response = get_spotify_tracks_audio_features(token, spotify_id_string)
 
         elif api_response.status_code == 429:
-            print(api_response.json())
             print(api_response.headers)
+            print("429: Called from audio feature request attempt 1.")
             time.sleep(spotify_sleep)
             client_iteration += 1
             if client_iteration > 2:
                 break
+
+            print(f"Moving to client credentials set {client_iteration}.")
 
             generate_access_token_from_spotify(id_list[client_iteration], secret_list[client_iteration],
                                                "./client-info/access_token.txt")
@@ -274,8 +279,8 @@ if __name__ == "__main__":
             time.sleep(spotify_sleep)
             api_response = get_spotify_tracks_audio_features(token, spotify_id_string)
             if api_response.status_code == 429:
-                print(api_response.json())
                 print(api_response.headers)
+                print("429: Called from audio feature request attempt 2. Should break.")
                 break
 
         # Second check
@@ -301,7 +306,10 @@ if __name__ == "__main__":
                     new_data[key] = feature_dict[key]
 
             df.loc[len(df)] = new_data.values()
-            new_data = initialize_new_data()
+
+        print("Audio feature dictionaries written to df. Looping...")
+        last_index_written = index
+        new_data = initialize_new_data()
 
         spotify_ids_for_call = []
         lastfm_ids_for_linking = []
@@ -311,18 +319,14 @@ if __name__ == "__main__":
             progress_report += progress_report_interval
             print(f"Progress: {round(100 * index / total, 2)}%")
             df_dict[index] = df
-            df = df.drop(labels=df.index, axis=0)
-
-        if index > progress_save:
-            progress_save += progress_save_interval
-            print(f"Progress saved: {round(100 * index / total, 2)}%")
-            df_dict[index] = df
             write_df = pd.concat(df_dict.values())
             write_df.to_csv("./data/spotify.csv")
-
+            df = df.drop(labels=df.index, axis=0)
+            with open("data/last-index-written.txt", "w") as f:
+                f.write(str(last_index_written))
 
     with open("data/last-index-written.txt", "w") as f:
-        f.write(str(index))
+        f.write(str(last_index_written))
 
     index += 1
     df_dict[index] = df
