@@ -2,7 +2,7 @@ import json
 import os
 import pandas as pd
 
-lfm_data_folder = "./unsynced-data/lastfm"
+lfm_data_folder = "../unsynced-data/lastfm"
 
 
 def create_csv_file():
@@ -54,5 +54,4 @@ def create_csv_file():
 
 
 if __name__ == "__main__":
-    df = pd.read_csv('data/lastfm.csv')
-    print(len(df))
+    create_csv_file()
