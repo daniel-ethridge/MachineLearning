@@ -2,4 +2,7 @@
 .idea
 data
 unsynced-data
-
+images
+.ipynb_checkpoints
+scratch.py
+.Rhistory
