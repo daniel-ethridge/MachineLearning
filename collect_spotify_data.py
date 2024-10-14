@@ -8,6 +8,8 @@ import time
 
 import pandas as pd
 
+import requests
+
 
 def get_spotify_track_id(track_name, artist_name, access_token):
     """
