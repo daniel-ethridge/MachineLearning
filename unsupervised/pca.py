@@ -96,37 +96,37 @@ def main():
     plt.show()
 
     # Perform PCA
-    spotify_pca = perform_pca(df, n_components=2)
-    plt.scatter(spotify_pca["transformed_data"][:, 0], spotify_pca["transformed_data"][:, 1])
-    plt.xlabel("Principal Component 1")
-    plt.ylabel("Principal Component 2")
-    plt.title("First Two Principal Components")
-    plt.savefig("../images/two-pc.png")
-    plt.show()
-    create_eigenvalue_chart(spotify_pca, "Eigenvalues: Percentage of Variance/Information\nfor Spotify Feature Data")
-
-    spotify_pca = perform_pca(df, n_components=3)
-    fig = plt.figure()
-    ax = fig.add_subplot(projection="3d")
-    ax.scatter(spotify_pca["transformed_data"][:, 0], spotify_pca["transformed_data"][:, 1],
-               spotify_pca["transformed_data"][:, 2])
-    ax.set_xlabel("Principal Component 1")
-    ax.set_ylabel("Principal Component 2")
-    ax.set_zlabel("Principal Component 3")
-    ax.set_title("First Three Principal Components")
-    plt.savefig("../images/three-pc.png")
-    plt.show()
-
-    scatter = plt.scatter(spotify_pca["transformed_data"][:, 0], spotify_pca["transformed_data"][:, 1],
-                c=spotify_pca["transformed_data"][:, 2], alpha=0.5)
-    plt.colorbar(scatter)
-    plt.xlabel("Principal Component 1")
-    plt.ylabel("Principal Component 2")
-    plt.title("First Three Principal Components (Third mapped to Color)")
-    plt.savefig("../images/three-pc-color.png")
-    plt.show()
-
-    create_eigenvalue_chart(spotify_pca, "Eigenvalues: Percentage of Variance/Information\nfor Spotify Feature Data")
+    # spotify_pca = perform_pca(df, n_components=2)
+    # plt.scatter(spotify_pca["transformed_data"][:, 0], spotify_pca["transformed_data"][:, 1])
+    # plt.xlabel("Principal Component 1")
+    # plt.ylabel("Principal Component 2")
+    # plt.title("First Two Principal Components")
+    # plt.savefig("../images/two-pc.png")
+    # plt.show()
+    # create_eigenvalue_chart(spotify_pca, "Eigenvalues: Percentage of Variance/Information\nfor Spotify Feature Data")
+    #
+    # spotify_pca = perform_pca(df, n_components=3)
+    # fig = plt.figure()
+    # ax = fig.add_subplot(projection="3d")
+    # ax.scatter(spotify_pca["transformed_data"][:, 0], spotify_pca["transformed_data"][:, 1],
+    #            spotify_pca["transformed_data"][:, 2])
+    # ax.set_xlabel("Principal Component 1")
+    # ax.set_ylabel("Principal Component 2")
+    # ax.set_zlabel("Principal Component 3")
+    # ax.set_title("First Three Principal Components")
+    # plt.savefig("../images/three-pc.png")
+    # plt.show()
+    #
+    # scatter = plt.scatter(spotify_pca["transformed_data"][:, 0], spotify_pca["transformed_data"][:, 1],
+    #             c=spotify_pca["transformed_data"][:, 2], alpha=0.5)
+    # plt.colorbar(scatter)
+    # plt.xlabel("Principal Component 1")
+    # plt.ylabel("Principal Component 2")
+    # plt.title("First Three Principal Components (Third mapped to Color)")
+    # plt.savefig("../images/three-pc-color.png")
+    # plt.show()
+    #
+    # create_eigenvalue_chart(spotify_pca, "Eigenvalues: Percentage of Variance/Information\nfor Spotify Feature Data")
 
     spotify_pca = perform_pca(df)
     create_eigenvalue_chart(spotify_pca, "Eigenvalues: Percentage of Variance/Information\nfor Spotify Feature Data")

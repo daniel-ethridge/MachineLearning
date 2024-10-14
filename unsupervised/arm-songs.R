@@ -12,34 +12,21 @@ library(arules)
 library(arulesViz)
 library(RColorBrewer)
 
-full_song_tags <- arules::read.transactions("./unsynced-data/shrunk-full-tags.csv",
-                                        rm.duplicates = FALSE, 
-                                        format = "basket",  ##if you use "single" also use cols=c(1,2)
-                                        sep=",",  ## csv file
-                                        cols=NULL) ## The dataset does not have row numbers
+# Set path
+setwd(dirname(rstudioapi::getSourceEditorContext()$path))
 
-reduced_song_tags <- arules::read.transactions("./unsynced-data/shrunk-reduced-tags.csv",
+song_tags <- arules::read.transactions("./../unsynced-data/lastfm-clean-tags-reduced.csv",
                                                rm.duplicates = FALSE, 
-                                               format = "basket",  ##if you use "single" also use cols=c(1,2)
-                                               sep=",",  ## csv file
-                                               cols=NULL) ## The dataset does not have row numbers
+                                               format = "basket",
+                                               sep=",",
+                                               cols=NULL)
 
-sort_val <- "confidence"
-
-##### Use apriori to get the RULES
-arm_full <- arules::apriori(full_song_tags, parameter = list(support=0.02, 
-                                                            confidence=0.1, minlen=2)) |> 
-  sort(by=sort_val)
-
-
-
-##### Use apriori to get the RULES
-arm_reduced <- arules::apriori(reduced_song_tags, parameter = list(support=0.001, 
+# Perform Apriori to get the rules
+arm <- arules::apriori(song_tags, parameter = list(support=0.01, 
                                                        confidence=0.5, minlen=2)) |> 
   sort(by="confidence")
 
-# inspect(arm_full)
-inspectDT(arm_reduced)
+inspect(arm)
 
 plot(arm_reduced, method="graph")
 
