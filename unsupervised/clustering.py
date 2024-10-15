@@ -19,7 +19,7 @@ def main():
 
     df.loc[df["instrumentalness"] > 0.5, "instrumental_music"] = False
     df_label = df["instrumental_music"]
-    df = df.drop(["spotify_id", "lastfm_id", "mode", "manual_check"], axis=1)
+    df = df.drop(["spotify_id", "lastfm_id", "mode", "manual_check", "instrumental_music"], axis=1)
     df = df.dropna()
     # df = df[:20000]
 
@@ -147,7 +147,11 @@ def main():
     #
     # plt.show()
 
-    dbscan = DBSCAN(eps=0.5, min_samples=20)
+    plt.scatter(pca_out[:, 0], pca_out[:, 1],
+                marker=".", s=30, lw=0, alpha=0.7, edgecolor="k")
+    plt.show()
+
+    dbscan = DBSCAN(eps=0.3, min_samples=5)
     labels = dbscan.fit_predict(pca_out)
     print(dict(Counter(labels)))
 
@@ -166,7 +170,6 @@ def main():
     ax.set_ylabel("PC 2")
     ax.set_zlabel("PC 3")
     ax.set_title("DBSCAN of First Three Principal Components")
-
     plt.show()
 
     # plt.scatter(df[labels == -1, 0], df[labels == -1, 1], s = 10, c="black")
