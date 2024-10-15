@@ -16,6 +16,9 @@ def run_pca(input_data: pd.DataFrame, n_components: int=None):
     :param n_components: number of components
     :return: pca object and result of pca.fit_transform()
     """
+
+
+
     # Drop any nans
     df = input_data.dropna()
 
@@ -23,13 +26,12 @@ def run_pca(input_data: pd.DataFrame, n_components: int=None):
     scaler = StandardScaler()
     scaled_df = scaler.fit_transform(df)
 
-    # print(scaled_df)
-
     # perform pca
     pca = PCA(n_components=n_components)
     pca_out = pca.fit_transform(scaled_df)
 
-    print(np.matmul(scaled_df, scaled_df))
+    print("From PCA:\n", pca_out)
+    print("\nTransformed data:\n", np.matmul(pca.components_, scaled_df.T).T)
 
 
     return pca, pca_out

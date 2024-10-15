@@ -11,7 +11,7 @@ if __name__ == "__main__":
     df = df_orig.drop(["PersonNum", "Gender", "State", "WorkExp", "Decision"], axis=1)
     # df.to_csv("data_folder/summer_clean.csv")
 
-    # pca, pca_out = run_pca(df, n_components=2)
+    pca, pca_out = run_pca(df, n_components=2)
 
     df = df.dropna()
 
