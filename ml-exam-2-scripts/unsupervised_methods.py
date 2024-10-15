@@ -6,6 +6,7 @@ from sklearn.preprocessing import StandardScaler
 import scipy.cluster.hierarchy as sch
 import pandas as pd
 from collections import Counter
+import numpy as np
 
 
 def run_pca(input_data: pd.DataFrame, n_components: int=None):
@@ -22,9 +23,14 @@ def run_pca(input_data: pd.DataFrame, n_components: int=None):
     scaler = StandardScaler()
     scaled_df = scaler.fit_transform(df)
 
+    # print(scaled_df)
+
     # perform pca
     pca = PCA(n_components=n_components)
     pca_out = pca.fit_transform(scaled_df)
+
+    print(np.matmul(scaled_df, scaled_df))
+
 
     return pca, pca_out
 
@@ -128,6 +134,6 @@ def run_dbscan(
         ax.set_ylabel(ylabel)
     if title is not None:
         ax.set_title(title)
-        
+
     fig.savefig(f"images/{plot_image_save_file}")
     plt.show()
