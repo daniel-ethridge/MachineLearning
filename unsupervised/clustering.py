@@ -147,11 +147,11 @@ def main():
     #
     # plt.show()
 
-    plt.scatter(pca_out[:, 0], pca_out[:, 1],
-                marker=".", s=30, lw=0, alpha=0.7, edgecolor="k")
-    plt.show()
+    # plt.scatter(pca_out[:, 0], pca_out[:, 1],
+    #             marker=".", s=30, lw=0, alpha=0.7, edgecolor="k")
+    # plt.show()
 
-    dbscan = DBSCAN(eps=0.3, min_samples=5)
+    dbscan = DBSCAN(eps=0.3, min_samples=10)
     labels = dbscan.fit_predict(pca_out)
     print(dict(Counter(labels)))
 
