@@ -7,3 +7,4 @@ images
 scratch.py
 .Rhistory
 client-info
+*.RData

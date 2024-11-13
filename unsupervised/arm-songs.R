@@ -1,6 +1,7 @@
 library(arules)
 library(arulesViz)
 library(RColorBrewer)
+library(rCBA)
 
 # Set path
 setwd(dirname(rstudioapi::getSourceEditorContext()$path))
@@ -15,6 +16,8 @@ song_tags <- arules::read.transactions("./../unsynced-data/lastfm-clean-tags-red
 arm <- arules::apriori(song_tags, parameter = list(support=0.01, 
                                                        confidence=0.5, minlen=2)) |> 
   sort(by="lift")
+
+fp <- rCBA::fpgrowth(song_tags)
 
 plot(arm, method="graph")
 

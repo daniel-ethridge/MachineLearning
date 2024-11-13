@@ -5,20 +5,20 @@ library(RColorBrewer)
 # Set path
 setwd(dirname(rstudioapi::getSourceEditorContext()$path))
 
-df_name <- "./data/"
+df_name <- "./data_folder/HealthyBasketData.csv"
 
 # Read in the transactions
-arm_transactions <- arules::read.transactions(df_name,
+arm_transactions <- arules::read.transactions("./data_folder/HealthyBasketData.csv",
                                                rm.duplicates = FALSE, 
                                                format = "basket",
                                                sep=",",
                                                cols=NULL)
 
 # Perform Apriori to get the rules
-arm_rules <- arules::apriori(arm_transactions, parameter = list(support=0.01, 
-                                                          confidence=0.5, 
-                                                          minlen=2)) |> 
-  sort(by="lift")
+arm_rules <- arules::apriori(arm_transactions, parameter = list(support=0.35, 
+                                                          confidence=0.35, 
+                                                          minlen=1)) |> 
+  sort(by="confidence")
 
 inspect(arm_rules)
 

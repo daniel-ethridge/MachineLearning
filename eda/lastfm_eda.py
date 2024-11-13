@@ -10,6 +10,7 @@ import csv
 """
 Below are a set of options to set. All of them need to be set before the script will run correctly
 LAST_FM_RAW: Raw Last.fm data
+LAST_FM_CLEAN: Full Last.fm data with clean tags
 LAST_FM_CLEAN_TAGS: Last.fm with clean tags (Top 50 most common). Will have empty transactions
 LAST_FM_CLEAN_REDUCED: Last.fm with clean tags (Top 50 most common). No empty transactions
 
@@ -21,6 +22,7 @@ CREATE_CLEAN_TAGS: Set to True if CLEAN_TAGS file does not exist or you want to 
 """
 # Set the options here
 LAST_FM_RAW = "../unsynced-data/lastfm.csv"
+LAST_FM_CLEAN = "../unsynced-data/lastfm-clean.csv"
 LAST_FM_CLEAN_TAGS = "../unsynced-data/lastfm-clean-tags.csv"
 LAST_FM_CLEAN_REDUCED = "../unsynced-data/lastfm-clean-tags-reduced.csv"
 
@@ -28,7 +30,7 @@ DIRTY_TAGS = "../unsynced-data/dirty-tag-list.pkl"
 CLEAN_TAGS = "../unsynced-data/clean-tag-list.pkl"
 
 CREATE_DIRTY_TAGS = False
-CREATE_CLEAN_TAGS = True
+CREATE_CLEAN_TAGS = False
 
 if CREATE_DIRTY_TAGS:
     print("Creating dirty tags file...")
@@ -174,6 +176,10 @@ reduced_tag_list = full_tag_list.copy()
 for idx, _ in enumerate(full_tag_list):
     reduced_tag_list[idx] = [i for i in full_tag_list[idx] if i in keys]
     reduced_tag_list[idx] = list(set(reduced_tag_list[idx]))
+
+df = pd.read_csv(LAST_FM_RAW)
+df["lfm_tags"] = pd.Series(reduced_tag_list)
+df.to_csv(LAST_FM_CLEAN)
 
 # Remove empty transactions from the reduced_tag_list
 shrunk_reduced_tag_list = [i for i in reduced_tag_list if len(i) > 0]
